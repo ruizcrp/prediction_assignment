@@ -7,7 +7,7 @@ output: html_document
 
 ## Executive Summary
 
-The following assignment provides an accurate prediction based on data provided by groupware. It concerns the manner in which different weight lifting training excercises are performed. Two different methods for predictions are attempted: classification trees and random forest.As the random forest method has a high accuracy of over 99.5%, this method is chosen in the end for the validation of the rest of the data.
+The following assignment provides an accurate prediction based on data provided by groupware. It concerns the manner in which different weight lifting training excercises are performed. Two different methods for predictions are attempted: classification trees and random forest.As the random forest method has a high accuracy of over 99.5%, this method is chosen in the end for the validation of the rest of the data. The out of sample error through cross-validation is thus under 0.5%.
 
 ##Loading the Data
 First of all the data has to be loaded. I load the pml-training.csv into the training data, which will be subsequently split into training and testing. And I call the data in the pml-testing.csv the validation. I will set the seed to 9243.
@@ -125,7 +125,7 @@ plot(cmat_rf$table, col = cmat_rf$byClass,main="Confusion Matrix for RF")
 
 ```
 
-This time there is a very high accuracy of over 99.5%! Also the plot shows that all of the five categories are almost always correctly predicted. It is thus clear that this model is to be prefered to the previous one, and that no other model is needed.
+This time there is a very high accuracy of over 99.5%! This implies a out of sample error of under 0.5%. Also the plot shows that all of the five categories are almost always correctly predicted. It is thus clear that this model is to be prefered to the previous one, and that no other model is needed.
 
 ##Predicting the Validation data
 Lastly, the prediction will be used on what I called validation data (the data contained in the file called pml-testing.csv).
