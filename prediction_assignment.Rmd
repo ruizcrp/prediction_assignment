@@ -1,0 +1,138 @@
+---
+title: "Prediction Assignment"
+author: "Christian Ruiz-Palmero"
+date: "December 31, 2016"
+output: html_document
+---
+
+## Executive Summary
+
+The following assignment provides an accurate prediction based on data provided by groupware. It concerns the manner in which different weight lifting training excercises are performed. Two different methods for predictions are attempted: classification trees and random forest.As the random forest method has a high accuracy of over 99.5%, this method is chosen in the end for the validation of the rest of the data.
+
+##Loading the Data
+First of all the data has to be loaded. I load the pml-training.csv into the training data, which will be subsequently split into training and testing. And I call the data in the pml-testing.csv the validation. I will set the seed to 9243.
+
+```{r, message=FALSE, warning=FALSE, }
+setwd("C:/Users/CRP/Dropbox/DataScience/MachineLearning/")
+library(knitr)
+library(caret)
+library(randomForest)
+library(rattle)
+library(plyr)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+training<-read.csv("pml-training.csv")
+validation<-read.csv("pml-testing.csv")
+set.seed(9243)
+```
+
+##Cleaning Data and Pre-Processing
+Then, the data has to be cleaned. First of all, the first five columns can be deleted as they are unnecessary for the explanation of the classe and just contain the unique identifier X, the user_name and three time-stamps.
+
+```{r cleaning and Preprocessing,}
+
+training<-training[,-c(1:5)]
+validation<-validation[,-c(1:5)]
+dim(training)
+```
+
+Then columns with NA's will be eliminated and subsequently all the columns with zero variance will be excluded with the nearZeroVar function.
+
+```{r more cleaning,}
+
+training <- training[, colSums(is.na(training)) == 0]
+
+
+nzv<-nearZeroVar(training,saveMetrics=TRUE)
+#there are quite some columns with zero variance
+
+training<-training[,!nzv$nzv]
+dim(training)
+
+
+```
+
+It is now also important that the elimination of these columns are also applied on the validation data. Plus the last colum in validation has to be deleted as it is different than the training data and as it is irrelevant
+
+```{r selector,}
+
+selector<-colnames(training[,-length(training)])
+validation<-validation[,selector]
+```
+
+Finally, the split can be made of the training data into a training and testing data, which will be necessary for the cross-validation.
+
+
+```{r split,}
+inTrain <- createDataPartition(y=training$classe,
+                                       p=0.7,list=FALSE)
+ testing<-training[-inTrain,]     
+ training<-training[inTrain,]
+     
+
+```
+
+##Model1: Classification trees
+The first model will use classification trees under the rpart method. The following shows the code and a plot showing the resulting branches.
+
+```{r mod_rpart, }
+
+
+
+
+mod_rpart<-train(classe~.,method="rpart",
+                  data=training)
+
+fancyRpartPlot(mod_rpart$finalModel)
+
+
+```
+
+Now, for the prediction, the testing data has to be applied. Subsequently the confusionmatrix is used to check for the accuracy.
+
+```{r pred_rpart, }
+pred_rpart<- predict(mod_rpart,testing)
+cmat<-confusionMatrix(pred_rpart,testing$classe)
+cmat$overall[1]
+plot(cmat$table, col = cmat$byClass,main="Confusion Matrix for RPART")
+
+```
+
+The accuracy of 52% is very low. The plot also visualizes how the important categories A and C are often wrongly predicted, and the category E is the only one that is almost always correctly predicted.
+
+Let's see if an alternative model can better predict the data.
+
+##Model 2: Random Forest
+
+The alternative model used is random forest. In order to improve the speed of the calculation, I added mtry=3 and ntree=200 into the parameters, which works very well.
+
+```{r mod_rf, }
+
+mod_rf <- randomForest(classe ~.,method="rf",
+              data=training,
+              mtry=3, ntree=200, do.trace=25)
+
+```
+
+The new model is again predicted using the testing data and a confusionmatrix is applied.
+
+```{r pred_rf, }
+pred_rf<- predict(mod_rf,testing)
+cmat_rf<- confusionMatrix(pred_rf,testing$classe)
+cmat_rf$overall[1]
+
+plot(cmat_rf$table, col = cmat_rf$byClass,main="Confusion Matrix for RF")
+
+```
+
+This time there is a very high accuracy of over 99.5%! Also the plot shows that all of the five categories are almost always correctly predicted. It is thus clear that this model is to be prefered to the previous one, and that no other model is needed.
+
+##Predicting the Validation data
+Lastly, the prediction will be used on what I called validation data (the data contained in the file called pml-testing.csv).
+
+
+```{r validation, }
+predict(mod_rf, validation)
+```
+
+The prediction exactly matches with the expected result.
